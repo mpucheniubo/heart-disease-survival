@@ -148,3 +148,12 @@ class Base:
             if self.data[column].nunique() > 2 and column not in self.primary_key:
                 self.data[column] = self.data[column].astype("category")
                 logging.info(f"Column '{column}' set to category.")
+
+    def make(self) -> None:
+        """
+        This method runs the main functions in the class to post-process the data.
+        """
+        self.columns_to_snake_case()
+        self.drop_columns_with_one_value()
+        self.set_booleans()
+        self.set_categories()
