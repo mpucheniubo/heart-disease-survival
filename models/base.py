@@ -4,6 +4,7 @@ from typing import Any, Callable
 from copy import deepcopy
 import logging
 import pandas as pd
+import re
 
 logging.basicConfig(level=logging.INFO)
 
@@ -70,6 +71,29 @@ class Base:
         """
         logging.info("Creating copy of 'Base' instance.")
         return deepcopy(self)
+
+    @staticmethod
+    def _to_snake_case(name: str) -> str:
+        """
+        Protected method that converst a string to snake case. Solution found in https://stackoverflow.com/questions/1175208/elegant-python-function-to-convert-camelcase-to-snake-case
+
+        # Parameters
+
+        name: `str`
+            The string to make snake case.
+
+        # Return
+
+        It outputs a string in snake case.
+        """
+        name = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+        name = re.sub("__([A-Z])", r"_\1", name)
+        name = re.sub("([a-z0-9])([A-Z])", r"\1_\2", name)
+        return name.lower()
+
+    def columns_to_snake_case(self) -> None:
+        self.data.columns = self.data.columns.map(self._to_snake_case)
+        self.primary_key = list(map(self._to_snake_case, self.primary_key))
 
     def verify_primary_key(self) -> bool:
         """
