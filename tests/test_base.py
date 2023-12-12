@@ -3,6 +3,29 @@ from __future__ import annotations
 from models.base import Base
 
 
+def test_columns_to_snake_case(base: Base) -> None:
+    """
+    It tests that the columns are renamed to snake case properly.
+    """
+    base = base.copy()
+    base.data.rename(
+        columns={"a": "One", "b": "No_Value", "c": "HTTPResponse", "d": "GO_HOME"},
+        inplace=True,
+    )
+    base.columns_to_snake_case()
+
+    assert set(base.data.columns) == {
+        "one",
+        "no_value",
+        "http_response",
+        "go_home",
+        "e",
+        "f",
+        "g",
+        "id",
+    }
+
+
 def test_verify_primary_key(base: Base) -> None:
     """
     It tests that the list passed as primary key is in fact a primary key. Then, by replacing the values of the primary key, the function should evaluate to `False`.
