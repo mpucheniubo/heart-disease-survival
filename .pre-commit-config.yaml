@@ -9,3 +9,7 @@ repos:
       - id: poetry-export
         args: ["-f", "requirements.txt", "--without-hashes", "--without-urls", "--with", "test", "-o", "requirements-test.txt"]
         verbose: true
+  - repo: https://github.com/psf/black
+    rev: 21.12b0
+    hooks:
+      - id: black
