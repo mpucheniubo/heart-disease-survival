@@ -17,6 +17,10 @@ class Base:
             The data set for the instance.
     primary_key: `list[str]`
             List with columns of the data that represent a unique record.
+    target: `str`
+            The target column.
+    event: `str`
+            In survival analysis the censoring column.
     boolean_mapping: `dict[str, dict[str, bool]]`
             Dictionary with the mappings of the boolean columns in the data set.
 
@@ -28,6 +32,10 @@ class Base:
             Input containing the dataset. If `None` is provided, the respective attribute will be initialized with an empty `DataFrame`.
     primary_key: `list[str]` or `None`, default `None`.
             Input with the information about the primary key of the data set. If the inpute evaluates to `False`, the respective input will be initialized with an empty list.
+    target: `str`, default `""`.
+            Target column for prediction.
+    event: `str`, default `""`.
+            Event column for censoring in survival analysis.
 
     ## __bool__
 
@@ -35,10 +43,16 @@ class Base:
     """
 
     def __init__(
-        self, data: pd.DataFrame | None = None, primary_key: list[str] | None = None
+        self,
+        data: pd.DataFrame | None = None,
+        primary_key: list[str] | None = None,
+        target: str = "",
+        event: str = "",
     ) -> None:
         self.data: pd.DataFrame = data if data is not None else pd.DataFrame()
         self.primary_key: list[str] = primary_key or []
+        self.target: str = target
+        self.event: str = event
         self.boolean_mapping: dict[str, dict[str, bool]] = {}
 
     def __bool__(self) -> None:
@@ -93,6 +107,8 @@ class Base:
 
     def columns_to_snake_case(self) -> None:
         self.data.columns = self.data.columns.map(self._to_snake_case)
+        self.target = self._to_snake_case(self.target)
+        self.event = self._to_snake_case(self.event)
         self.primary_key = list(map(self._to_snake_case, self.primary_key))
 
     def verify_primary_key(self) -> bool:
