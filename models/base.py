@@ -23,6 +23,8 @@ class Base:
             In survival analysis the censoring column.
     boolean_mapping: `dict[str, dict[str, bool]]`
             Dictionary with the mappings of the boolean columns in the data set.
+    skip_columns: `list[str]`
+            Read only property with columns to skip.
 
     # Model
 
@@ -54,6 +56,13 @@ class Base:
         self.target: str = target
         self.event: str = event
         self.boolean_mapping: dict[str, dict[str, bool]] = {}
+
+    @property
+    def skip_columns(self) -> list[str]:
+        if self.event:
+            return self.primary_key + [self.target, self.event]
+        else:
+            return self.primary_key + [self.target]
 
     def __bool__(self) -> None:
         _is = False
