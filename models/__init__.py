@@ -4,5 +4,12 @@ from models.features import (
     FeatureMaxTheoreticalHR,
     Features,
 )
+from models.survival import Survival
 
-__all__ = [Base, FeatureCholesterolThreshold, FeatureMaxTheoreticalHR, Features]
+__all__ = [
+    Base,
+    FeatureCholesterolThreshold,
+    FeatureMaxTheoreticalHR,
+    Features,
+    Survival,
+]
