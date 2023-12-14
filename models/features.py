@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from pandas.core.groupby.groupby import GroupBy
+from sklearn.preprocessing import OneHotEncoder
 
 from .base import Base
 from .utils import classproperty
@@ -79,11 +80,23 @@ class FeatureMaxTheoreticalHR(Feature):
 
 class Features:
     """
-    This is an abstraction layer to compute all the features using the `Base`.
+    This is an abstraction layer to compute all the features using the `Base`. It has the following properties/attributes:
+
+    _base: `Base`
+        Protected attribute with the `Base` instance to work with.
+    one_hot_encoder: `OneHotEncoder`
+        Initialized one hot encoder.
+    marker: `str`
+        Read only property with the prefix for a feature.
+     categorical_marker: `str`
+        Read only property with the prefix for a categorical feature.
+     numerical_marker: `str`
+        Read only property with the prefix for a numerical feature.
     """
 
     def __init__(self, base: Base) -> None:
         self._base: Base = base
+        self.one_hot_encoder: OneHotEncoder = OneHotEncoder(handle_unknown="ignore")
 
     @property
     def marker(self) -> str:
@@ -96,3 +109,64 @@ class Features:
     @property
     def numerical_marker(self) -> str:
         return Feature.numerical_marker
+
+    def to_numerical(self, columns: list[str], keep_original: bool = False) -> None:
+        """
+        This adds the numerical feature prefix to the provided columns.
+
+        # Parameters
+
+        columns: `list[str]`
+            List of the columns to mark as numerical features.
+        keep_original: `bool`, default `False`
+            Whether to keep the original columns or not.
+        """
+        column_mapping = {column: self.numerical_marker + column for column in columns}
+        if keep_original:
+            for column, fet_column in column_mapping.items():
+                self._base.data[fet_column] = self._base.data[column]
+        else:
+            self._base.data.rename(columns=column_mapping, inplace=True)
+
+    def to_categorical(
+        self, columns: list[str], keep_original: bool = False, use_ohe: bool = False
+    ) -> None:
+        """
+        This adds the categorical feature prefix to the provided columns and provides numerical values instead of the category entities. If `use_ohe` is set
+        to `False`, an enumeration of the categories is given as the feature. Otherwise, a one hot encoding is performed and the encoder stored in the property
+        `one_hot_encoder`.
+
+        # Parameters
+
+        columns: `list[str]`
+            List of the columns to mark as numerical features.
+        keep_original: `bool`, default `False`
+            Whether to keep the original columns or not.
+        use_ohe: `bool`, default `False`
+            Whether to use a one hot encoding or not.
+        """
+        column_mapping = {
+            column: self.categorical_marker + column for column in columns
+        }
+        if use_ohe:
+            self.one_hot_encoder.fit(self._base.data[column_mapping.keys()])
+            feat_columns = [
+                self.categorical_marker + column
+                for column in self.one_hot_encoder.get_feature_names_out()
+            ]
+            feats = pd.DataFrame(
+                self.one_hot_encoder.transform(
+                    self._base.data[column_mapping.keys()].values
+                ).toarray(),
+                columns=feat_columns,
+            )
+            self._base.data = pd.concat([self._base.data, feats], axis=1)
+            self._base.columns_to_snake_case()
+        else:
+            for column, feat_column in column_mapping.items():
+                df = self._base.data[[column]].drop_duplicates()
+                df[feat_column] = np.arange(df.shape[0])
+                self._base.data = self._base.data.merge(df, how="left", on=[column])
+
+        if not keep_original:
+            self._base.data.drop(columns=column_mapping.keys(), inplace=True)
