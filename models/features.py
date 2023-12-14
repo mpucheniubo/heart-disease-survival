@@ -170,3 +170,19 @@ class Features:
 
         if not keep_original:
             self._base.data.drop(columns=column_mapping.keys(), inplace=True)
+
+    def cholesterol_threshold(self) -> None:
+        """
+        This creates the feature to determine whether the cholesterol goes above the threshold or not.
+        """
+        feature = FeatureCholesterolThreshold()
+        self._base.data[feature.name] = feature.run(
+            column="cholesterol", data=self._base.data
+        )
+
+    def max_theoretical_heart_rate(self) -> None:
+        """
+        This creates the feature with the max heart rate estimate.
+        """
+        feature = FeatureMaxTheoreticalHR()
+        self._base.data[feature.name] = feature.run(column="age", data=self._base.data)
