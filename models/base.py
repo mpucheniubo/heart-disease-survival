@@ -2,11 +2,24 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from copy import deepcopy
+from dataclasses import dataclass
 import logging
 import pandas as pd
 import re
 
 logging.basicConfig(level=logging.INFO)
+
+
+@dataclass
+class Split:
+    """
+    Small dataclass containing the information to split the data set into train and validation.
+    """
+
+    column: str = "dataset"
+    size: float = 0.2
+    train_label: str = "train"
+    validation_label: str = "validation"
 
 
 class Base:
@@ -25,6 +38,12 @@ class Base:
             Dictionary with the mappings of the boolean columns in the data set.
     skip_columns: `list[str]`
             Read only property with columns to skip.
+    split: `Split`
+            Information necessary to split data set in train and validation.
+    train_data: `DataFrame`
+            Read only property with the train data set.
+    validation_data: `DataFrame`
+            Read only property with the validation data set.
 
     # Model
 
@@ -56,11 +75,12 @@ class Base:
         self.target: str = target
         self.event: str = event
         self.boolean_mapping: dict[str, dict[str, bool]] = {}
+        self.split: Split = Split()
 
     @property
     def skip_columns(self) -> list[str]:
         if self.event:
-            return self.primary_key + [self.target, self.event]
+            return self.primary_key + [self.target, self.event, self.split.column]
         else:
             return self.primary_key + [self.target]
 
@@ -69,6 +89,22 @@ class Base:
         if self.verify_primary_key() and self.data.shape[0] > 0:
             _is = True
         return _is
+
+    @property
+    def train_data(self) -> pd.DataFrame:
+        if self.split.column not in self.data.columns:
+            self.set_train_test_split()
+        return self.data.loc[
+            self.data[self.split.column] == self.split.train_label
+        ].copy()
+
+    @property
+    def validation_data(self) -> pd.DataFrame:
+        if self.split.column not in self.data.columns:
+            self.set_train_test_split()
+        return self.data.loc[
+            self.data[self.split.column] == self.split.validation_label
+        ].copy()
 
     class Decorators:
         @classmethod
@@ -98,7 +134,7 @@ class Base:
     @staticmethod
     def _to_snake_case(name: str) -> str:
         """
-        Protected method that converst a string to snake case. Solution found in https://stackoverflow.com/questions/1175208/elegant-python-function-to-convert-camelcase-to-snake-case
+        Protected method that converts a string to snake case. Solution found in https://stackoverflow.com/questions/1175208/elegant-python-function-to-convert-camelcase-to-snake-case
 
         # Parameters
 
@@ -114,11 +150,31 @@ class Base:
         name = re.sub("([a-z0-9])([A-Z])", r"\1_\2", name)
         return name.lower()
 
+    def set_train_test_split(self, key: list[str] | None = None) -> None:
+        """
+        This adds a column to the data set with the split name and the respective labels.
+
+        # Parameters
+
+        key: `list[str]` or `None`, default `None`
+            Set of columns to use as the key for the train/validation split. If no value is provided, the primary key will be used.
+        """
+        if not key:
+            key = self.primary_key.copy()
+        df = self.data.sample(frac=1 - self.split.size, random_state=42)[key]
+        df[self.split.column] = self.split.train_label
+        self.data = self.data.merge(df, how="left", on=key)
+        self.data[self.split.column].fillna(self.split.validation_label, inplace=True)
+
     def columns_to_snake_case(self) -> None:
+        """
+        This sets all columns to snake case, updating the target, event, primary key and split column attributes as well.
+        """
         self.data.columns = self.data.columns.map(self._to_snake_case)
         self.target = self._to_snake_case(self.target)
         self.event = self._to_snake_case(self.event)
         self.primary_key = list(map(self._to_snake_case, self.primary_key))
+        self.split.column = self._to_snake_case(self.split.column)
 
     def verify_primary_key(self) -> bool:
         """
@@ -153,7 +209,7 @@ class Base:
         """
         logging.info("Setting binary columns to 'boolean'.")
         for column in self.data.select_dtypes(include="object"):
-            if self.data[column].nunique() == 2 and column not in self.primary_key:
+            if self.data[column].nunique() == 2 and column not in self.skip_columns:
                 values = self.data[column].unique()
                 self.boolean_mapping[column] = {values[0]: True, values[1]: False}
                 self.data[column] = (
@@ -170,7 +226,7 @@ class Base:
             "Setting columns with more than 2 different entries to 'category'."
         )
         for column in self.data.select_dtypes(include="object"):
-            if self.data[column].nunique() > 2 and column not in self.primary_key:
+            if self.data[column].nunique() > 2 and column not in self.skip_columns:
                 self.data[column] = self.data[column].astype("category")
                 logging.info(f"Column '{column}' set to category.")
 
@@ -179,6 +235,7 @@ class Base:
         This method runs the main functions in the class to post-process the data.
         """
         self.columns_to_snake_case()
+        self.set_train_test_split()
         self.drop_columns_with_one_value()
         self.set_booleans()
         self.set_categories()
