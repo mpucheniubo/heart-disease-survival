@@ -31,7 +31,7 @@ class Survival:
         return self.PATH.joinpath("data", "model")
 
     @classmethod
-    def create(cls) -> Survival:
+    def create(cls, model: str = "XGBoostSurvivalEmbeddings") -> Survival:
         data = (
             pd.read_csv(
                 cls.PATH.joinpath("data", "csv", "heart.csv"), sep=",", decimal="."
@@ -40,7 +40,8 @@ class Survival:
             .rename(columns={"index": "Id"})
         )
         survival = cls(
-            Base(data=data, primary_key=["Id"], target="Age", event="HeartDisease")
+            Base(data=data, primary_key=["Id"], target="Age", event="HeartDisease"),
+            model,
         )
         survival.base.make()
 
