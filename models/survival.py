@@ -61,3 +61,7 @@ class Survival:
         self.features.max_theoretical_heart_rate()
 
         return self
+
+    def train_and_evaluate(self) -> Survival:
+        self.model.train()
+        self.model.compute_metrics()
