@@ -11,6 +11,27 @@ from models.utils import classproperty
 
 
 class Survival:
+    """
+    This is the main class to produce the predictions with survival analysis for the data set. The attributes/properties are:
+
+    PATH: `Path`
+        Root directory.
+    MODEL_MAPPING: `dict[str, Model]`
+        Mapping with the different models, name to class.
+    base: `Base`
+        Main structure to manage and manipulate the data.
+    features: `Features`
+        Main structure to create and add futures to the data set.
+    model: `Model`
+        The chosen model to use for the predictions.
+    predictions: `DataFrame`
+        Resulting predictions.
+    base_path: `Path`
+        Path to store base instances.
+    model_path: `Path`
+        Path to store model instances.
+    """
+
     PATH: Path = Path(__file__).parent.parent
 
     MODEL_MAPPING: dict[str, Model] = {
@@ -33,6 +54,18 @@ class Survival:
 
     @classmethod
     def create(cls, model: str = "XGBoostSurvivalEmbeddings") -> Survival:
+        """
+        Method to instantiate an object tailored to the problem at hand.
+
+        # Parameters
+
+        model: `str`
+            Name of the model to use.
+
+        # Returen
+
+        It outputs the instantiated object.
+        """
         data = (
             pd.read_csv(
                 cls.PATH.joinpath("data", "csv", "heart.csv"), sep=",", decimal="."
@@ -50,6 +83,20 @@ class Survival:
 
     @classmethod
     def load(cls, name: str, model: str = "XGBoostSurvivalEmbeddings") -> Survival:
+        """
+        Method to load a precomputed model and data with features.
+
+        # Parameters
+
+        name: `str`
+            Complementary name of the instance.
+        model: `str`
+            Name of the model to use.
+
+        # Return
+
+        It outputs the instantiated, loaded object.
+        """
         base = Base.load(cls.base_path, name)
         survival = cls(base)
         survival.model = cls.MODEL_MAPPING.get(model).load(
@@ -58,6 +105,18 @@ class Survival:
         return survival
 
     def make_features(self, use_ohe: bool = False) -> Survival:
+        """
+        Makes the features for the data set, with the option to use one hot encoding for categorical variables.
+
+        # Parameters
+
+        use_ohe: `bool`, default `False`
+            Whether to use OHE or not.
+
+        # Return
+
+        It outputs the same instance for concatenation.
+        """
         # cols to numerical
         num_cols = [
             col
@@ -81,12 +140,31 @@ class Survival:
         return self
 
     def train_and_evaluate(self) -> Survival:
+        """
+        This trains and computes the error metrics for the model.
+
+        # Return
+
+        It outputs the same instance for concatenation.
+        """
         self.model.train()
         self.model.compute_metrics()
 
         return self
 
     def save(self, name: str) -> Survival:
+        """
+        This stores the necessary objects to reconstruct the object instance.
+
+        # Parameters
+
+        name: `str`
+            Complementary name of the instance.
+
+        # Return
+
+        It outputs the same instance for concatenation.
+        """
         os.makedirs(self.base_path, exist_ok=True)
         os.makedirs(self.model_path, exist_ok=True)
 
@@ -96,6 +174,14 @@ class Survival:
         return self
 
     def make_predictions(self) -> Survival:
+        """
+        This populates the predictions data frame with the predictions and makes some manipulations to provide the
+        primary key together with the ages and respective survival rates.
+
+        # Return
+
+        It outputs the same instance for concatenation.
+        """
         self.predictions = self.model.predict()
         columns = self.predictions.columns
         self.predictions[self.base.primary_key] = self.base.data[self.base.primary_key]
