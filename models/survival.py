@@ -1,12 +1,13 @@
 from __future__ import annotations
-from typing import Literal
 
 import pandas as pd
 from pathlib import Path
+import os
 
 from models.base import Base
 from models.features import Features
 from models.models import Model, XGBSEKaplanTreeModel
+from models.utils import classproperty
 
 
 class Survival:
@@ -21,10 +22,20 @@ class Survival:
         self.features: Features = Features(base=self.base)
         self.model: Model = self.MODEL_MAPPING.get(model)(features=self.features)
 
+    @classproperty
+    def base_path(self) -> Path:
+        return self.PATH.joinpath("data", "base")
+
+    @classproperty
+    def model_path(self) -> Path:
+        return self.PATH.joinpath("data", "model")
+
     @classmethod
     def create(cls) -> Survival:
         data = (
-            pd.read_csv(cls.PATH.joinpath("data", "heart.csv"), sep=",", decimal=".")
+            pd.read_csv(
+                cls.PATH.joinpath("data", "csv", "heart.csv"), sep=",", decimal="."
+            )
             .reset_index()
             .rename(columns={"index": "Id"})
         )
@@ -36,8 +47,13 @@ class Survival:
         return survival
 
     @classmethod
-    def load(cls) -> Survival:
-        ...
+    def load(cls, name: str, model: str = "XGBoostSurvivalEmbeddings") -> Survival:
+        base = Base.load(cls.base_path, name)
+        survival = cls(base)
+        survival.model = cls.MODEL_MAPPING.get(model).load(
+            cls.model_path, name, survival.features
+        )
+        return survival
 
     def make_features(self, use_ohe: bool = False) -> Survival:
         # cols to numerical
@@ -65,3 +81,14 @@ class Survival:
     def train_and_evaluate(self) -> Survival:
         self.model.train()
         self.model.compute_metrics()
+
+        return self
+
+    def save(self, name: str) -> Survival:
+        os.makedirs(self.base_path, exist_ok=True)
+        os.makedirs(self.model_path, exist_ok=True)
+
+        self.base.save(self.base_path, name)
+        self.model.save(self.model_path, name)
+
+        return self

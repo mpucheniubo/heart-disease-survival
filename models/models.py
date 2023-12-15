@@ -1,8 +1,11 @@
 from __future__ import annotations
+from typing import Any
 
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
+from pathlib import Path
+import pickle
 from sksurv.metrics import integrated_brier_score
 from xgbse import XGBSEKaplanTree
 from xgbse.converters import convert_to_structured
@@ -19,6 +22,7 @@ class Model(ABC):
     @abstractmethod
     def __init__(self, features: Features) -> None:
         self._features: Features = features
+        self._model: Any = None
         self.metrics: pd.DataFrame = pd.DataFrame(
             columns=[
                 "model",
@@ -27,6 +31,11 @@ class Model(ABC):
                 self._features._base.split.validation_label,
             ]
         )
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        ...
 
     @abstractmethod
     def train(self) -> None:
@@ -37,8 +46,12 @@ class Model(ABC):
         ...
 
     @abstractmethod
-    def save(self) -> None:
-        ...
+    def save(self, path: Path, name: str) -> None:
+        with open(path.joinpath(f"{name}.pkl"), "wb") as file:
+            pickle.dump(self._model, file)
+            self.metrics.to_parquet(
+                path.joinpath(f"metrics_{name}.parquet"), index=False
+            )
 
     @abstractmethod
     def compute_metrics() -> None:
@@ -46,14 +59,24 @@ class Model(ABC):
 
     @classmethod
     @abstractmethod
-    def load(self) -> Model:
-        ...
+    def load(cls, path: Path, name: str, features: Features) -> Model:
+        with open(path.joinpath(f"{name}.pkl"), "rb") as file:
+            model = cls(features)
+            model._model = pickle.load(file)
+            model.metrics = pd.read_parquet(path.joinpath(f"metrics_{name}.parquet"))
+            return model
 
 
 class XGBSEKaplanTreeModel(Model):
-    def __init__(self, features: Features) -> None:
+    def __init__(
+        self, features: Features, params: dict[str, Any] | None = None
+    ) -> None:
         super().__init__(features)
-        self._model: XGBSEKaplanTree = XGBSEKaplanTree()
+        self._model: XGBSEKaplanTree = XGBSEKaplanTree(params)
+
+    @property
+    def name(self) -> str:
+        return self.__class__.__name__
 
     @property
     def time_bins(self) -> np.ndarray:
@@ -103,8 +126,8 @@ class XGBSEKaplanTreeModel(Model):
             ]
         return self._model.predict(x)
 
-    def save(self) -> None:
-        return super().save()
+    def save(self, path: Path, name: str) -> None:
+        super().save(path, name)
 
     def compute_metrics(self) -> None:
         train_preds = self.predict(self.x_train)
@@ -130,7 +153,7 @@ class XGBSEKaplanTreeModel(Model):
                 self.metrics,
                 pd.DataFrame(
                     data={
-                        "model": self.__class__.__name__,
+                        "model": self.name,
                         "metric": "sksurv_ibs",
                         self._features._base.split.train_label: ibs_train,
                         self._features._base.split.validation_label: ibs_validation,
@@ -150,7 +173,7 @@ class XGBSEKaplanTreeModel(Model):
                 self.metrics,
                 pd.DataFrame(
                     data={
-                        "model": self.__class__.__name__,
+                        "model": self.name,
                         "metric": "xgbse_ibs",
                         self._features._base.split.train_label: ibs_train,
                         self._features._base.split.validation_label: ibs_validation,
@@ -161,5 +184,5 @@ class XGBSEKaplanTreeModel(Model):
         ).reset_index(drop=True)
 
     @classmethod
-    def load() -> XGBSEKaplanTreeModel:
-        ...
+    def load(cls, path: Path, name: str, features: Features) -> XGBSEKaplanTreeModel:
+        return super().load(path, name, features)

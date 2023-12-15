@@ -5,6 +5,8 @@ from copy import deepcopy
 from dataclasses import dataclass
 import logging
 import pandas as pd
+from pathlib import Path
+import pickle
 import re
 
 logging.basicConfig(level=logging.INFO)
@@ -239,3 +241,41 @@ class Base:
         self.drop_columns_with_one_value()
         self.set_booleans()
         self.set_categories()
+
+    def save(self, path: Path, name: str) -> None:
+        """
+        This saves the object instance. The data set is stored separately as a parquet file.
+
+        # Parameters
+
+        path: `Path`
+            Location of the stored object.
+        name: `str`
+            Complementary name of the instance.
+        """
+        with open(path.joinpath(f"base_{name}.pkl"), "wb") as file:
+            base = self.copy()
+            base.data = pd.DataFrame(columns=base.data.columns)
+            pickle.dump(base, file)
+            self.data.to_parquet(path.joinpath(f"heart_{name}.parquet"), index=False)
+
+    @staticmethod
+    def load(path: Path, name: str) -> Base:
+        """
+        This loads the base instance with the respective dataset.
+
+        # Parameters
+
+        path: `Path`
+            Location of the stored object.
+        name: `str`
+            Complementary name of the instance.
+
+        # Return
+
+        It outputs the loaded base instance with the data.
+        """
+        with open(path.joinpath(f"base_{name}.pkl"), "rb") as file:
+            base = pickle.load(file)
+            base.data = pd.read_parquet(path.joinpath(f"heart_{name}.parquet"))
+            return base
