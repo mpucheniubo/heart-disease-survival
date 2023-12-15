@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 from xgbse import XGBSEKaplanTree
 
-from models.base import Base
+from models.features import Features
 
 
 class Model(ABC):
@@ -13,8 +13,8 @@ class Model(ABC):
     """
 
     @abstractmethod
-    def __init__(self, base: Base) -> None:
-        self._base: Base = base
+    def __init__(self, features: Features) -> None:
+        self._features: Features = features
 
     @abstractmethod
     def train(self) -> None:
@@ -35,12 +35,12 @@ class Model(ABC):
 
 
 class XGBSEKaplanTreeModel(Model):
-    def __init__(self, base: Base) -> None:
-        super().__init__(base)
+    def __init__(self, features: Features) -> None:
+        super().__init__(features)
         self.model: XGBSEKaplanTree = XGBSEKaplanTree()
 
     def train(self) -> None:
-        return super().train()
+        self.model.fit()
 
     def predict(self) -> None:
         return super().predict()

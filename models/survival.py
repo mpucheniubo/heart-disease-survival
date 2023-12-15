@@ -19,7 +19,7 @@ class Survival:
     def __init__(self, base: Base, model: str = "XGBoostSurvivalEmbeddings") -> None:
         self.base: Base = base
         self.features: Features = Features(base=self.base)
-        self.model: Model = self.MODEL_MAPPING.get(model)()
+        self.model: Model = self.MODEL_MAPPING.get(model)(features=self.features)
 
     @classmethod
     def create(cls) -> Survival:
