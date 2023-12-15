@@ -42,7 +42,7 @@ class Model(ABC):
         ...
 
     @abstractmethod
-    def predict(self) -> None:
+    def predict(self, x: pd.DataFrame | None = None) -> pd.DataFrame:
         ...
 
     @abstractmethod

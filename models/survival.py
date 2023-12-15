@@ -21,6 +21,7 @@ class Survival:
         self.base: Base = base
         self.features: Features = Features(base=self.base)
         self.model: Model = self.MODEL_MAPPING.get(model)(features=self.features)
+        self.predictions: pd.DataFrame = pd.DataFrame()
 
     @classproperty
     def base_path(self) -> Path:
@@ -92,4 +93,18 @@ class Survival:
         self.base.save(self.base_path, name)
         self.model.save(self.model_path, name)
 
+        return self
+
+    def make_predictions(self) -> Survival:
+        self.predictions = self.model.predict()
+        columns = self.predictions.columns
+        self.predictions[self.base.primary_key] = self.base.data[self.base.primary_key]
+        self.predictions = self.predictions.melt(
+            id_vars=self.base.primary_key,
+            value_vars=columns,
+            var_name="year",
+            value_name="survival_rate",
+        )
+        self.predictions.sort_values(by=self.base.primary_key + ["year"], inplace=True)
+        self.predictions.reset_index(drop=True, inplace=True)
         return self
