@@ -102,9 +102,9 @@ class Survival:
         self.predictions = self.predictions.melt(
             id_vars=self.base.primary_key,
             value_vars=columns,
-            var_name="year",
+            var_name="age",
             value_name="survival_rate",
         )
-        self.predictions.sort_values(by=self.base.primary_key + ["year"], inplace=True)
+        self.predictions.sort_values(by=self.base.primary_key + ["age"], inplace=True)
         self.predictions.reset_index(drop=True, inplace=True)
         return self
