@@ -110,6 +110,32 @@ class Features:
     def numerical_marker(self) -> str:
         return Feature.numerical_marker
 
+    def get_numerical(self) -> list[str]:
+        """
+        It provides a list with the columns corresponding to the numerical features.
+
+        # Return
+
+        List whose entries start with the numerical marker.
+        """
+        feats = self._base.data.columns[
+            self._base.data.columns.str.startswith(self.numerical_marker)
+        ]
+        return list(feats)
+
+    def get_categorical(self) -> list[str]:
+        """
+        It provides a list with the columns corresponding to the categorical features.
+
+        # Return
+
+        List whose entries start with the categorical marker.
+        """
+        feats = self._base.data.columns[
+            self._base.data.columns.str.startswith(self.categorical_marker)
+        ]
+        return list(feats)
+
     def to_numerical(self, columns: list[str], keep_original: bool = False) -> None:
         """
         This adds the numerical feature prefix to the provided columns.
