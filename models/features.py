@@ -88,9 +88,9 @@ class Features:
         Initialized one hot encoder.
     marker: `str`
         Read only property with the prefix for a feature.
-     categorical_marker: `str`
+    categorical_marker: `str`
         Read only property with the prefix for a categorical feature.
-     numerical_marker: `str`
+    numerical_marker: `str`
         Read only property with the prefix for a numerical feature.
     """
 

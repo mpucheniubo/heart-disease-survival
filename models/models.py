@@ -16,11 +16,22 @@ from models.features import Features
 
 class Model(ABC):
     """
-    Abstract base class to create an interface for all models.
+    Abstract base class to create an interface for all models. It has the following properties/attributes:
+
+    _features: `Features`
+        Protected attribute with the features instance.
+    _model: `Any`
+        Protected attribute with the concrete model to be used.
+    metrics: `DataFrame`
+        Data with the metric values to evaluate model performance.
+    name: `str`
+        Read only property with the name of the model class.
     """
 
     @abstractmethod
-    def __init__(self, features: Features) -> None:
+    def __init__(
+        self, features: Features, params: dict[str, Any] | None = None
+    ) -> None:
         self._features: Features = features
         self._model: Any = None
         self.metrics: pd.DataFrame = pd.DataFrame(
@@ -33,9 +44,8 @@ class Model(ABC):
         )
 
     @property
-    @abstractmethod
     def name(self) -> str:
-        ...
+        return self.__class__.__name__
 
     @abstractmethod
     def train(self) -> None:
@@ -47,6 +57,16 @@ class Model(ABC):
 
     @abstractmethod
     def save(self, path: Path, name: str) -> None:
+        """
+        This saves the model instance by storing the concrete model as a pkl file and the metrics.
+
+        # Parameters
+
+        path: `Path`
+            Location of the stored object.
+        name: `str`
+            Complementary name of the instance.
+        """
         with open(path.joinpath(f"{name}.pkl"), "wb") as file:
             pickle.dump(self._model, file)
             self.metrics.to_parquet(
@@ -60,6 +80,20 @@ class Model(ABC):
     @classmethod
     @abstractmethod
     def load(cls, path: Path, name: str, features: Features) -> Model:
+        """
+        This loads the model instance with the respective metrics.
+
+        # Parameters
+
+        path: `Path`
+            Location of the stored object.
+        name: `str`
+            Complementary name of the instance.
+
+        # Return
+
+        It outputs the loaded model instance with the metrics.
+        """
         with open(path.joinpath(f"{name}.pkl"), "rb") as file:
             model = cls(features)
             model._model = pickle.load(file)
@@ -68,15 +102,26 @@ class Model(ABC):
 
 
 class XGBSEKaplanTreeModel(Model):
+    """
+    This implements the interface for the XGBoost Survival Embeddings model Kaplan Tree. On top of the ABC attributes it has:
+
+    time_bins: `ndarray`
+        Time range of the predictions.
+    x_train: `DataFrame`
+        Data set with the train values.
+    y_train: `ndarray`
+        Structured array with the train target and event.
+    x_validation: `DataFrame`
+        Data set with the validation values.
+    y_validation: `ndarray`
+        Structured array with the validation target and event.
+    """
+
     def __init__(
         self, features: Features, params: dict[str, Any] | None = None
     ) -> None:
         super().__init__(features)
         self._model: XGBSEKaplanTree = XGBSEKaplanTree(params)
-
-    @property
-    def name(self) -> str:
-        return self.__class__.__name__
 
     @property
     def time_bins(self) -> np.ndarray:
@@ -117,9 +162,24 @@ class XGBSEKaplanTreeModel(Model):
         )
 
     def train(self) -> None:
+        """
+        This serves as a wrapper to fit the model.
+        """
         self._model.fit(self.x_train, self.y_train, time_bins=self.time_bins)
 
-    def predict(self, x: pd.DataFrame | None = None) -> None:
+    def predict(self, x: pd.DataFrame | None = None) -> pd.DataFrame:
+        """
+        This can be used to predict values for a given data set. The whole is used as default.
+
+        # Parameters
+
+        x: `DataFrame` or `None`, default `None`
+            Data set to apply predictions to.
+
+        # Return
+
+        It outputs the predicted surival rates for the time range.
+        """
         if x is None:
             x = self._features._base.data[
                 self._features.get_categorical() + self._features.get_numerical()
@@ -130,6 +190,9 @@ class XGBSEKaplanTreeModel(Model):
         super().save(path, name)
 
     def compute_metrics(self) -> None:
+        """
+        This is a wrapper to compute the IBS with different implementations.
+        """
         train_preds = self.predict(self.x_train)
         validation_preds = self.predict(self.x_validation)
         self._compute_xgbse_ibs(train_preds, validation_preds)
@@ -138,6 +201,16 @@ class XGBSEKaplanTreeModel(Model):
     def _compute_sksurv_ibs(
         self, train_preds: pd.DataFrame, validation_preds: pd.DataFrame
     ) -> None:
+        """
+        This computes the IBS by using the sci-kit surival implementation.
+
+        # Parameters
+
+        train_preds: `DataFrame`
+            Prediction based on the train data set.
+        validation_preds: `DataFrame`
+            Prediction based on the validation data set.
+        """
         time_bins = np.arange(self.y_train["c2"].min(), self.y_train["c2"].max())
         ibs_train = integrated_brier_score(
             self.y_train, self.y_train, train_preds[time_bins], time_bins
@@ -166,6 +239,16 @@ class XGBSEKaplanTreeModel(Model):
     def _compute_xgbse_ibs(
         self, train_preds: pd.DataFrame, validation_preds: pd.DataFrame
     ) -> None:
+        """
+        This computes the IBS by using the default implementation of xgbse.
+
+        # Parameters
+
+        train_preds: `DataFrame`
+            Prediction based on the train data set.
+        validation_preds: `DataFrame`
+            Prediction based on the validation data set.
+        """
         ibs_train = approx_brier_score(self.y_train, train_preds)
         ibs_validation = approx_brier_score(self.y_validation, validation_preds)
         self.metrics = pd.concat(
