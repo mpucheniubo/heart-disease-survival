@@ -213,9 +213,11 @@ class Base:
         for column in self.data.select_dtypes(include="object"):
             if self.data[column].nunique() == 2 and column not in self.skip_columns:
                 values = self.data[column].unique()
-                self.boolean_mapping[column] = {values[0]: True, values[1]: False}
+                self.boolean_mapping[column] = {True: values[0], False: values[1]}
                 self.data[column] = (
-                    self.data[column].map(self.boolean_mapping[column]).astype("bool")
+                    self.data[column]
+                    .map({values[0]: True, values[1]: False})
+                    .astype("bool")
                 )
                 logging.info(f"Column '{column}' set to boolean.")
 

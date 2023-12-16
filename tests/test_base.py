@@ -63,8 +63,8 @@ def test_set_booleans(base: Base) -> None:
     _base = base.copy()
     _base.set_booleans()
     assert set(_base.data.select_dtypes(include="bool").columns) == {"f", "g"}
-    assert _base.boolean_mapping.get("f") == {"N": False, "Y": True}
-    assert _base.boolean_mapping.get("g") == {"0": False, "1": True}
+    assert _base.boolean_mapping.get("f") == {False: "N", True: "Y"}
+    assert _base.boolean_mapping.get("g") == {False: "0", True: "1"}
 
 
 def test_set_categories(base: Base) -> None:
