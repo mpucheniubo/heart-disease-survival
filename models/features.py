@@ -6,6 +6,8 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from pandas.core.groupby.groupby import GroupBy
+from pathlib import Path
+import pickle
 from sklearn.preprocessing import OneHotEncoder
 
 from .base import Base
@@ -212,3 +214,38 @@ class Features:
         """
         feature = FeatureMaxTheoreticalHR()
         self._base.data[feature.name] = feature.run(column="age", data=self._base.data)
+
+    def save(self, path: Path, name: str) -> None:
+        """
+        This saves the necessary information to reconstruct the features instance.
+
+        # Parameters
+
+        path: `Path`
+            Location of the stored object.
+        name: `str`
+            Complementary name of the instance.
+        """
+        with open(path.joinpath(f"ohe_{name}.pkl"), "wb") as file:
+            pickle.dump(self.one_hot_encoder, file)
+
+    @classmethod
+    def load(cls, path: Path, name: str, base: Base) -> Features:
+        """
+        This loads the one hot encoder instance to restore the features object.
+
+        # Parameters
+
+        path: `Path`
+            Location of the stored object.
+        name: `str`
+            Complementary name of the instance.
+
+        # Return
+
+        It outputs the loaded features instance.
+        """
+        with open(path.joinpath(f"ohe_{name}.pkl"), "rb") as file:
+            features = cls(base)
+            features.one_hot_encoder = pickle.load(file)
+            return features

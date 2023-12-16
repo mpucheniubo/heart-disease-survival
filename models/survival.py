@@ -28,6 +28,8 @@ class Survival:
         Resulting predictions.
     base_path: `Path`
         Path to store base instances.
+    features_path: `Path`
+        Path to store features instances.
     model_path: `Path`
         Path to store model instances.
     """
@@ -47,6 +49,10 @@ class Survival:
     @classproperty
     def base_path(self) -> Path:
         return self.PATH.joinpath("data", "base")
+
+    @classproperty
+    def features_path(self) -> Path:
+        return self.PATH.joinpath("data", "features")
 
     @classproperty
     def model_path(self) -> Path:
@@ -99,6 +105,7 @@ class Survival:
         """
         base = Base.load(cls.base_path, name)
         survival = cls(base)
+        survival.features = Features.load(cls.features_path, name, survival.base)
         survival.model = cls.MODEL_MAPPING.get(model).load(
             cls.model_path, name, survival.features
         )
@@ -166,9 +173,11 @@ class Survival:
         It outputs the same instance for concatenation.
         """
         os.makedirs(self.base_path, exist_ok=True)
+        os.makedirs(self.features_path, exist_ok=True)
         os.makedirs(self.model_path, exist_ok=True)
 
         self.base.save(self.base_path, name)
+        self.features.save(self.features_path, name)
         self.model.save(self.model_path, name)
 
         return self
