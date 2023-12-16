@@ -130,7 +130,7 @@ class Survival:
             for col in self.base.data.select_dtypes(include=["float", "int"])
             if col not in self.base.skip_columns
         ]
-        self.features.to_numerical(columns=num_cols)
+        self.features.to_numerical(columns=num_cols, keep_original=True)
 
         # cols to categorical
         cat_cols = [
@@ -138,7 +138,9 @@ class Survival:
             for col in self.base.data.select_dtypes(include=["bool", "category"])
             if col not in self.base.skip_columns
         ]
-        self.features.to_categorical(columns=cat_cols, use_ohe=use_ohe)
+        self.features.to_categorical(
+            columns=cat_cols, keep_original=True, use_ohe=use_ohe
+        )
 
         # compute features
         self.features.cholesterol_threshold()
