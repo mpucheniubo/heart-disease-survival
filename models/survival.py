@@ -207,18 +207,51 @@ class Survival:
         It outputs the same instance for concatenation.
         """
         logging.info("Running predictions for the whole data set.")
-        self.predictions = self.model.predict()
-        columns = self.predictions.columns
-        self.predictions[self.base.primary_key] = self.base.data[self.base.primary_key]
-        self.predictions = self.predictions.melt(
-            id_vars=self.base.primary_key,
-            value_vars=columns,
-            var_name="age",
-            value_name="survival_rate",
+        preds, lower, upper = self.model.predict(return_ci=True)
+        preds = self._melt_predictions(df=preds.round(4), value_name="survival_rate")
+        lower = self._melt_predictions(
+            df=lower.round(4), value_name="lower_survival_rate"
         )
+        upper = self._melt_predictions(
+            df=upper.round(4), value_name="upper_survival_rate"
+        )
+
+        # merge lower and upper bounds
+        self.predictions = preds.merge(
+            lower, how="left", on=self.base.primary_key + ["age"]
+        ).merge(upper, how="left", on=self.base.primary_key + ["age"])
+
         self.predictions.sort_values(by=self.base.primary_key + ["age"], inplace=True)
         self.predictions.reset_index(drop=True, inplace=True)
         return self
+
+    def _melt_predictions(
+        self, df: pd.DataFrame, value_name: str, var_name: str = "age"
+    ) -> pd.DataFrame:
+        """
+        This takes over post-processing the individual predicitons to an appropriate tabular structure.
+
+        # Parameters
+
+        df: `DataFrame`
+            Data set to format.
+        value_name: `str`
+            Name of the final value.
+        var_name: `str`, default `"age"`
+            Value of the variable to unpivot.
+
+        # Return
+
+        It outputs the unpivoted data set.
+        """
+        df[self.base.primary_key] = self.base.data[self.base.primary_key]
+        df = df.melt(
+            id_vars=self.base.primary_key,
+            value_vars=df.columns,
+            var_name=var_name,
+            value_name=value_name,
+        )
+        return df
 
     def make_figs(self) -> Survival:
         """
@@ -236,8 +269,21 @@ class Survival:
         """
         This creates a figure for the average survival rate of the whole data set.
         """
-        df = self.predictions.groupby("age")[["survival_rate"]].mean().reset_index()
-        plt.plot(df["age"], df["survival_rate"], "b-")
+        df = (
+            self.predictions.groupby("age")[
+                ["survival_rate", "lower_survival_rate", "upper_survival_rate"]
+            ]
+            .mean()
+            .reset_index()
+        )
+        plt.plot(df["age"], df["survival_rate"], "g-", linewidth=2)
+        plt.fill_between(
+            df["age"],
+            df["lower_survival_rate"],
+            df["upper_survival_rate"],
+            alpha=0.25,
+            color="g",
+        )
         plt.xlabel("Age [Years]")
         plt.ylabel("Survival rate")
         plt.title("Heart Disease Survival Probability")
@@ -256,10 +302,21 @@ class Survival:
         )
         df["sex"] = df["sex"].map(self.base.boolean_mapping.get("sex"))
 
-        df = df.groupby(["age", "sex"])[["survival_rate"]].mean().reset_index()
+        df = (
+            df.groupby(["age", "sex"])[
+                ["survival_rate", "lower_survival_rate", "upper_survival_rate"]
+            ]
+            .mean()
+            .reset_index()
+        )
         for sex, _df in df.groupby("sex"):
             plt.plot(_df["age"], _df["survival_rate"], label=f"Sex [{sex}]")
-
+            plt.fill_between(
+                _df["age"],
+                _df["lower_survival_rate"],
+                _df["upper_survival_rate"],
+                alpha=0.25,
+            )
         plt.legend(loc=1)
         plt.xlabel("Age [Years]")
         plt.ylabel("Survival rate")

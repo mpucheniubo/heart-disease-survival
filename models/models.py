@@ -53,7 +53,9 @@ class Model(ABC):
         ...
 
     @abstractmethod
-    def predict(self, x: pd.DataFrame | None = None) -> pd.DataFrame:
+    def predict(
+        self, x: pd.DataFrame | None = None, **kwargs
+    ) -> pd.DataFrame | tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         ...
 
     @abstractmethod
@@ -171,7 +173,9 @@ class XGBSEKaplanTreeModel(Model):
         logging.info("Fitting mdoel.")
         self._model.fit(self.x_train, self.y_train, time_bins=self.time_bins)
 
-    def predict(self, x: pd.DataFrame | None = None) -> pd.DataFrame:
+    def predict(
+        self, x: pd.DataFrame | None = None, return_ci: bool = False
+    ) -> pd.DataFrame | tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
         This can be used to predict values for a given data set. The whole is used as default.
 
@@ -179,6 +183,8 @@ class XGBSEKaplanTreeModel(Model):
 
         x: `DataFrame` or `None`, default `None`
             Data set to apply predictions to.
+        return_ci: `bool`, default `False`
+            Whether to return the confidence intervals or not.
 
         # Return
 
@@ -189,7 +195,7 @@ class XGBSEKaplanTreeModel(Model):
             x = self._features._base.data[
                 self._features.get_categorical() + self._features.get_numerical()
             ]
-        return self._model.predict(x)
+        return self._model.predict(x, return_ci=return_ci)
 
     def save(self, path: Path, name: str) -> None:
         super().save(path, name)
