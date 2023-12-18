@@ -214,7 +214,7 @@ class Features:
         """
         feature = FeatureCholesterolThreshold()
         self._base.data[feature.name] = feature.run(
-            column=f"{self.numerical_marker}cholesterol", data=self._base.data
+            column=f"{self.numerical_marker}chol", data=self._base.data
         ).astype("int")
 
     def max_theoretical_heart_rate(self) -> None:

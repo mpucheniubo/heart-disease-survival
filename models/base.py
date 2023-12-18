@@ -216,7 +216,7 @@ class Base:
         excluded.
         """
         logging.info("Setting binary columns to 'boolean'.")
-        for column in self.data.select_dtypes(include="object"):
+        for column in self.data.columns:
             if self.data[column].nunique() == 2 and column not in self.skip_columns:
                 values = self.data[column].unique()
                 self.boolean_mapping[column] = {True: values[0], False: values[1]}
@@ -228,14 +228,19 @@ class Base:
                 logging.info(f"Column '{column}' set to boolean.")
 
     @Decorators.verified
-    def set_categories(self) -> None:
+    def set_categories(self, columns: list[str] | None = None) -> None:
         """
         This method sets columns whose dtype is `object` to category if they have more than two different entries, excluding the columns of the primary key.
+
+        columns: `list[str]` or `None`, default `None`
+            Columns to set as category. If no value is passed, it'll be triead for all object-type columns.
         """
         logging.info(
             "Setting columns with more than 2 different entries to 'category'."
         )
-        for column in self.data.select_dtypes(include="object"):
+        if not columns:
+            columns = self.data.select_dtypes(include="object")
+        for column in columns:
             if self.data[column].nunique() > 2 and column not in self.skip_columns:
                 self.data[column] = self.data[column].astype("category")
                 logging.info(f"Column '{column}' set to category.")
@@ -248,7 +253,9 @@ class Base:
         self.set_train_test_split()
         self.drop_columns_with_one_value()
         self.set_booleans()
-        self.set_categories()
+        self.set_categories(
+            columns=["cp", "fbs", "restecg", "exang", "slope", "ca", "thal"]
+        )
 
     @Decorators.verified
     def save(self, path: Path, name: str) -> None:

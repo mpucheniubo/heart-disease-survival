@@ -79,10 +79,10 @@ class Survival:
                 cls.PATH.joinpath("data", "csv", "heart.csv"), sep=",", decimal="."
             )
             .reset_index()
-            .rename(columns={"index": "Id"})
+            .rename(columns={"index": "id"})
         )
         survival = cls(
-            Base(data=data, primary_key=["Id"], target="Age", event="HeartDisease"),
+            Base(data=data, primary_key=["id"], target="age", event="target"),
             model,
         )
         survival.base.make()
