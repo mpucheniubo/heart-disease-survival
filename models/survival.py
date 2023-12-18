@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import pandas as pd
 from pathlib import Path
 import os
@@ -72,6 +73,7 @@ class Survival:
 
         It outputs the instantiated object.
         """
+        logging.info("Creating Survival instance from CSV file.")
         data = (
             pd.read_csv(
                 cls.PATH.joinpath("data", "csv", "heart.csv"), sep=",", decimal="."
@@ -103,6 +105,7 @@ class Survival:
 
         It outputs the instantiated, loaded object.
         """
+        logging.info("Attempting to load Survival instance.")
         base = Base.load(cls.base_path, name)
         survival = cls(base)
         survival.features = Features.load(cls.features_path, name, survival.base)
@@ -124,6 +127,7 @@ class Survival:
 
         It outputs the same instance for concatenation.
         """
+        logging.info("Making all features.")
         # cols to numerical
         num_cols = [
             col
@@ -156,6 +160,7 @@ class Survival:
 
         It outputs the same instance for concatenation.
         """
+        logging.info("Training model and computing metrics.")
         self.model.train()
         self.model.compute_metrics()
 
@@ -174,6 +179,7 @@ class Survival:
 
         It outputs the same instance for concatenation.
         """
+        logging.info("Attempting to save Survival instance.")
         os.makedirs(self.base_path, exist_ok=True)
         os.makedirs(self.features_path, exist_ok=True)
         os.makedirs(self.model_path, exist_ok=True)
@@ -193,6 +199,7 @@ class Survival:
 
         It outputs the same instance for concatenation.
         """
+        logging.info("Running predictions for the whole data set.")
         self.predictions = self.model.predict()
         columns = self.predictions.columns
         self.predictions[self.base.primary_key] = self.base.data[self.base.primary_key]

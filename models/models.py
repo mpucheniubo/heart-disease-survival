@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Any
 
 from abc import ABC, abstractmethod
+import logging
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -67,6 +68,7 @@ class Model(ABC):
         name: `str`
             Complementary name of the instance.
         """
+        logging.info(f"Attempting to save {self.name} instance.")
         with open(path.joinpath(f"{name}.pkl"), "wb") as file:
             pickle.dump(self._model, file)
             self.metrics.to_parquet(
@@ -94,6 +96,7 @@ class Model(ABC):
 
         It outputs the loaded model instance with the metrics.
         """
+        logging.info(f"Attempting to load {name} instance.")
         with open(path.joinpath(f"{name}.pkl"), "rb") as file:
             model = cls(features)
             model._model = pickle.load(file)
@@ -165,6 +168,7 @@ class XGBSEKaplanTreeModel(Model):
         """
         This serves as a wrapper to fit the model.
         """
+        logging.info("Fitting mdoel.")
         self._model.fit(self.x_train, self.y_train, time_bins=self.time_bins)
 
     def predict(self, x: pd.DataFrame | None = None) -> pd.DataFrame:
@@ -180,6 +184,7 @@ class XGBSEKaplanTreeModel(Model):
 
         It outputs the predicted surival rates for the time range.
         """
+        logging.info("Running predictions.")
         if x is None:
             x = self._features._base.data[
                 self._features.get_categorical() + self._features.get_numerical()
@@ -193,6 +198,7 @@ class XGBSEKaplanTreeModel(Model):
         """
         This is a wrapper to compute the IBS with different implementations.
         """
+        logging.info("Calculating metrics.")
         train_preds = self.predict(self.x_train)
         validation_preds = self.predict(self.x_validation)
         self._compute_xgbse_ibs(train_preds, validation_preds)
@@ -211,6 +217,7 @@ class XGBSEKaplanTreeModel(Model):
         validation_preds: `DataFrame`
             Prediction based on the validation data set.
         """
+        logging.info("Calculating IBS with sci-kit survival implementation.")
         time_bins = np.arange(self.y_train["c2"].min(), self.y_train["c2"].max())
         ibs_train = integrated_brier_score(
             self.y_train, self.y_train, train_preds[time_bins], time_bins
@@ -249,6 +256,7 @@ class XGBSEKaplanTreeModel(Model):
         validation_preds: `DataFrame`
             Prediction based on the validation data set.
         """
+        logging.info("Calculating IBS with XGBSE implementation.")
         ibs_train = approx_brier_score(self.y_train, train_preds)
         ibs_validation = approx_brier_score(self.y_validation, validation_preds)
         self.metrics = pd.concat(

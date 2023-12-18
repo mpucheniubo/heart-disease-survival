@@ -9,8 +9,6 @@ from pathlib import Path
 import pickle
 import re
 
-logging.basicConfig(level=logging.INFO)
-
 
 @dataclass
 class Split:
@@ -22,6 +20,10 @@ class Split:
     size: float = 0.2
     train_label: str = "train"
     validation_label: str = "validation"
+
+    def __post_init__(self) -> None:
+        if self.size < 0.0 or self.size > 1.0:
+            raise ValueError("Size must be between 0 and 1.")
 
 
 class Base:
@@ -147,11 +149,13 @@ class Base:
 
         It outputs a string in snake case.
         """
+        logging.info(f"Setting column {name} to snake case.")
         name = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
         name = re.sub("__([A-Z])", r"_\1", name)
         name = re.sub("([a-z0-9])([A-Z])", r"\1_\2", name)
         return name.lower()
 
+    @Decorators.verified
     def set_train_test_split(self, key: list[str] | None = None) -> None:
         """
         This adds a column to the data set with the split name and the respective labels.
@@ -161,6 +165,7 @@ class Base:
         key: `list[str]` or `None`, default `None`
             Set of columns to use as the key for the train/validation split. If no value is provided, the primary key will be used.
         """
+        logging.info("Setting train test split.")
         if not key:
             key = self.primary_key.copy()
         df = self.data.sample(frac=1 - self.split.size, random_state=42)[key]
@@ -172,6 +177,7 @@ class Base:
         """
         This sets all columns to snake case, updating the target, event, primary key and split column attributes as well.
         """
+        logging.info("Setting all data columns to snake case.")
         self.data.columns = self.data.columns.map(self._to_snake_case)
         self.target = self._to_snake_case(self.target)
         self.event = self._to_snake_case(self.event)
@@ -244,6 +250,7 @@ class Base:
         self.set_booleans()
         self.set_categories()
 
+    @Decorators.verified
     def save(self, path: Path, name: str) -> None:
         """
         This saves the object instance. The data set is stored separately as a parquet file.
@@ -255,6 +262,7 @@ class Base:
         name: `str`
             Complementary name of the instance.
         """
+        logging.info("Attempting to save Base instance.")
         with open(path.joinpath(f"base_{name}.pkl"), "wb") as file:
             base = self.copy()
             base.data = pd.DataFrame(columns=base.data.columns)
@@ -277,7 +285,8 @@ class Base:
 
         It outputs the loaded base instance with the data.
         """
+        logging.info("Attempting to load Base instance.")
         with open(path.joinpath(f"base_{name}.pkl"), "rb") as file:
-            base = pickle.load(file)
+            base: Base = pickle.load(file)
             base.data = pd.read_parquet(path.joinpath(f"heart_{name}.parquet"))
             return base

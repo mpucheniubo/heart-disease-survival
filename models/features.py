@@ -3,6 +3,7 @@ from typing import ClassVar
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+import logging
 import numpy as np
 import pandas as pd
 from pandas.core.groupby.groupby import GroupBy
@@ -10,8 +11,8 @@ from pathlib import Path
 import pickle
 from sklearn.preprocessing import OneHotEncoder
 
-from .base import Base
-from .utils import classproperty
+from models.base import Base
+from models.utils import classproperty
 
 
 @dataclass
@@ -61,6 +62,7 @@ class FeatureCholesterolThreshold(Feature):
         return self.categorical_marker + "cholesterol_threshold"
 
     def run(self, column: str, data: pd.DataFrame) -> pd.Series:
+        logging.info("Running FeatureCholesterolThreshold.")
         return np.where(data[column] >= self.threshold, True, False).astype("bool")
 
 
@@ -77,6 +79,7 @@ class FeatureMaxTheoreticalHR(Feature):
         return self.numerical_marker + "max_theoretical_hr"
 
     def run(self, column: str, data: pd.DataFrame) -> pd.Series:
+        logging.info("Running FeatureMaxTheoreticalHR.")
         return self.threshold - data[column]
 
 
@@ -120,6 +123,7 @@ class Features:
 
         List whose entries start with the numerical marker.
         """
+        logging.info("Retrieving numerical columns.")
         feats = self._base.data.columns[
             self._base.data.columns.str.startswith(self.numerical_marker)
         ]
@@ -133,6 +137,7 @@ class Features:
 
         List whose entries start with the categorical marker.
         """
+        logging.info("Retrieving categorical columns.")
         feats = self._base.data.columns[
             self._base.data.columns.str.startswith(self.categorical_marker)
         ]
@@ -149,6 +154,7 @@ class Features:
         keep_original: `bool`, default `False`
             Whether to keep the original columns or not.
         """
+        logging.info("Renaming columns with numerical prefix.")
         column_mapping = {column: self.numerical_marker + column for column in columns}
         if keep_original:
             for column, fet_column in column_mapping.items():
@@ -167,16 +173,18 @@ class Features:
         # Parameters
 
         columns: `list[str]`
-            List of the columns to mark as numerical features.
+            List of the columns to mark as categorical features.
         keep_original: `bool`, default `False`
             Whether to keep the original columns or not.
         use_ohe: `bool`, default `False`
             Whether to use a one hot encoding or not.
         """
+        logging.info("Renaming columns with categorical prefix.")
         column_mapping = {
             column: self.categorical_marker + column for column in columns
         }
         if use_ohe:
+            logging.info("Using OHE for categorical features.")
             self.one_hot_encoder.fit(self._base.data[column_mapping.keys()])
             feat_columns = [
                 self.categorical_marker + column
@@ -191,6 +199,7 @@ class Features:
             self._base.data = pd.concat([self._base.data, feats], axis=1)
             self._base.columns_to_snake_case()
         else:
+            logging.info("Using categorical enumeration for features.")
             for column, feat_column in column_mapping.items():
                 df = self._base.data[[column]].drop_duplicates()
                 df[feat_column] = np.arange(df.shape[0])
@@ -226,6 +235,7 @@ class Features:
         name: `str`
             Complementary name of the instance.
         """
+        logging.info("Attempting to save Features instance.")
         with open(path.joinpath(f"ohe_{name}.pkl"), "wb") as file:
             pickle.dump(self.one_hot_encoder, file)
 
@@ -245,6 +255,7 @@ class Features:
 
         It outputs the loaded features instance.
         """
+        logging.info("Attempting to load Features instance.")
         with open(path.joinpath(f"ohe_{name}.pkl"), "rb") as file:
             features = cls(base)
             features.one_hot_encoder = pickle.load(file)
