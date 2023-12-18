@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import matplotlib.pyplot as plt
 import pandas as pd
 from pathlib import Path
 import os
@@ -31,6 +32,8 @@ class Survival:
         Path to store base instances.
     features_path: `Path`
         Path to store features instances.
+    figs_path: `Path`
+        Path to store figures.
     model_path: `Path`
         Path to store model instances.
     """
@@ -54,6 +57,10 @@ class Survival:
     @classproperty
     def features_path(self) -> Path:
         return self.PATH.joinpath("data", "features")
+
+    @property
+    def figs_path(self) -> Path:
+        return self.PATH.joinpath("data", "figs")
 
     @classproperty
     def model_path(self) -> Path:
@@ -212,3 +219,51 @@ class Survival:
         self.predictions.sort_values(by=self.base.primary_key + ["age"], inplace=True)
         self.predictions.reset_index(drop=True, inplace=True)
         return self
+
+    def make_figs(self) -> Survival:
+        """
+        This orchestrates the production of the figures.
+
+        # Return
+
+        It outputs the same instance for concatenation.
+        """
+        self._fig_overall_survival()
+        self._fig_sex_survival()
+        return self
+
+    def _fig_overall_survival(self) -> None:
+        """
+        This creates a figure for the average survival rate of the whole data set.
+        """
+        df = self.predictions.groupby("age")[["survival_rate"]].mean().reset_index()
+        plt.plot(df["age"], df["survival_rate"], "b-")
+        plt.xlabel("Age [Years]")
+        plt.ylabel("Survival rate")
+        plt.title("Heart Disease Survival Probability")
+        plt.tight_layout()
+        plt.savefig(self.figs_path.joinpath("survival_rates.png"))
+        plt.show()
+
+    def _fig_sex_survival(self) -> None:
+        """
+        This creates a figure for the average survival rate of the whole data set per sex.
+        """
+        df = self.predictions.merge(
+            self.base.data[self.base.primary_key + ["sex"]],
+            on=self.base.primary_key,
+            how="left",
+        )
+        df["sex"] = df["sex"].map(self.base.boolean_mapping.get("sex"))
+
+        df = df.groupby(["age", "sex"])[["survival_rate"]].mean().reset_index()
+        for sex, _df in df.groupby("sex"):
+            plt.plot(_df["age"], _df["survival_rate"], label=f"Sex [{sex}]")
+
+        plt.legend(loc=1)
+        plt.xlabel("Age [Years]")
+        plt.ylabel("Survival rate")
+        plt.title("Heart Disease Survival Probability (Sex)")
+        plt.tight_layout()
+        plt.savefig(self.figs_path.joinpath("survival_rates_sex.png"))
+        plt.show()
