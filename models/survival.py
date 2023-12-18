@@ -11,7 +11,7 @@ from models import (
     Features,
 )
 from models.models import (
-    Model,
+    XGBSEModel,
     XGBSEKaplanTreeModel,
     XGBSEKaplanNeighborsModel,
 )
@@ -46,7 +46,7 @@ class Survival:
 
     PATH: Path = Path(__file__).parent.parent
 
-    MODEL_MAPPING: dict[str, Model] = {
+    MODEL_MAPPING: dict[str, XGBSEModel] = {
         "XGBSEKaplanTreeModel": XGBSEKaplanTreeModel,
         "XGBSEKaplanNeighborsModel": XGBSEKaplanNeighborsModel,
     }
@@ -54,7 +54,7 @@ class Survival:
     def __init__(self, base: Base, model: str = "XGBSEKaplanNeighborsModel") -> None:
         self.base: Base = base
         self.features: Features = Features(base=self.base)
-        self.model: Model = self.MODEL_MAPPING.get(model)(features=self.features)
+        self.model: XGBSEModel = self.MODEL_MAPPING.get(model)(features=self.features)
         self.predictions: pd.DataFrame = pd.DataFrame()
 
     @classproperty
