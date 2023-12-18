@@ -6,9 +6,15 @@ import pandas as pd
 from pathlib import Path
 import os
 
-from models.base import Base
-from models.features import Features
-from models.models import Model, XGBSEKaplanTreeModel
+from models import (
+    Base,
+    Features,
+)
+from models.models import (
+    Model,
+    XGBSEKaplanTreeModel,
+    XGBSEKaplanNeighborsModel,
+)
 from models.utils import classproperty
 
 
@@ -41,10 +47,11 @@ class Survival:
     PATH: Path = Path(__file__).parent.parent
 
     MODEL_MAPPING: dict[str, Model] = {
-        "XGBoostSurvivalEmbeddings": XGBSEKaplanTreeModel
+        "XGBSEKaplanTreeModel": XGBSEKaplanTreeModel,
+        "XGBSEKaplanNeighborsModel": XGBSEKaplanNeighborsModel,
     }
 
-    def __init__(self, base: Base, model: str = "XGBoostSurvivalEmbeddings") -> None:
+    def __init__(self, base: Base, model: str = "XGBSEKaplanNeighborsModel") -> None:
         self.base: Base = base
         self.features: Features = Features(base=self.base)
         self.model: Model = self.MODEL_MAPPING.get(model)(features=self.features)
@@ -67,7 +74,7 @@ class Survival:
         return self.PATH.joinpath("data", "model")
 
     @classmethod
-    def create(cls, model: str = "XGBoostSurvivalEmbeddings") -> Survival:
+    def create(cls, model: str = "XGBSEKaplanNeighborsModel") -> Survival:
         """
         Method to instantiate an object tailored to the problem at hand.
 
@@ -97,7 +104,7 @@ class Survival:
         return survival
 
     @classmethod
-    def load(cls, name: str, model: str = "XGBoostSurvivalEmbeddings") -> Survival:
+    def load(cls, name: str, model: str = "XGBSEKaplanNeighborsModel") -> Survival:
         """
         Method to load a precomputed model and data with features.
 
