@@ -21,6 +21,7 @@ An interface for the `XGBSEKaplanTree` has been also implemented.
 The survival rates for the whole data set look as follows:
 
 ![](data/figs/survival_rates.png)
+
 *Average predicted survival rates for the whole data set. Confidence interval set to the default of width of 0.683.*
 
 Note that by age 70, the likelihood of not having had a cardiac event is as high as 70%.
@@ -28,6 +29,7 @@ Note that by age 70, the likelihood of not having had a cardiac event is as high
 Since the data set has been pseudonimized, it's unclear which gender is which, but one can still see differences between the two of them:
 
 ![](data/figs/survival_rates_sex.png)
+
 *Average predicted survival rates for the whole data set depending on the sex [0,1]. Confidence interval set to the default of width of 0.683.*
 
 
