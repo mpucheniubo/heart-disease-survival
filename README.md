@@ -103,9 +103,10 @@ pre-commit install
 
 These include creating the requirements, checking for code formatting and running the tests before committing.
 
-Now you are set to develop and execute the program:
+Now you are set to develop and execute the program. Activate the virtual environment and run the entry point:
 
 ```commandline
+poetry shell
 poetry run python entry.py
 ```
 
