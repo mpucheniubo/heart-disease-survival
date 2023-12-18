@@ -4,3 +4,4 @@
 *.csv
 *.pkl
 *.parquet
+.DS_Store
