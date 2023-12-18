@@ -2,7 +2,7 @@
 
 This is a small project to apply survival models to heart disease data. So far, only models from [XGBoost Survival Embeddings](https://loft-br.github.io/xgboost-survival-embeddings/index.html) (XGBSE) have been implemented, but it already provides valuable insights into the data.
 
-The aim of this project is also to show how to have a solid and reliable software development approach for a data science application which is more oriented TDD and MLOps.
+The aim of this project is also to show how to have a solid and reliable software development approach for a data science application which is more TDD and MLOps oriented.
 
 ## 📜 Context
 
