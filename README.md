@@ -12,7 +12,7 @@ This can be tackled very well by using survival analysis with right censored dat
 
 ## 🎓 Results
 
-The current model, XGBSE' `XGBSEKaplanNeighbors`, uses a tree-based approach  to the calculate the [Kaplan–Meier estimator](https://en.wikipedia.org/wiki/Kaplan–Meier_estimator) of the data points after performing a neighbor search, which is computationally rather expensive. Nonetheless, this approach leads to a **explainable** interpretation of the model by using the built-in feature importance. Moreover, since the model is probability-based, it also provides confidence intervals for the predictions.
+The current model, XGBSE' `XGBSEKaplanNeighbors`, uses a tree-based approach  to the calculate the [Kaplan–Meier estimator](https://en.wikipedia.org/wiki/Kaplan–Meier_estimator) of the data points after performing a neighbor search, which is computationally rather expensive. Nonetheless, this approach leads to a **explainable** ML model by using the built-in feature importance. Moreover, since the model is probability-based, it also provides confidence intervals for the predictions.
 
 An interface for the `XGBSEKaplanTree` has been also implemented.
 
@@ -72,7 +72,7 @@ These are the steps one needs to do to run the main entry point, `entry.py`.
 
 ### 💾 Data set
 
-First, download the main CSV file from the [source](https://www.kaggle.com/datasets/johnsmith88/heart-disease-dataset/). The version being used dates to the end of December 2023. Once the file has been downloaded, clone the repository and added to `data/csv` as `heart.csv`.
+First, download the main CSV file from the [source](https://www.kaggle.com/datasets/johnsmith88/heart-disease-dataset/). The version being used dates to the end of December 2023. Once the file has been downloaded, clone the repository and add it to `data/csv` as `heart.csv`.
 
 ### 📦 Install the virtual environment
 
