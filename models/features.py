@@ -205,6 +205,8 @@ class Features:
                 df[feat_column] = np.arange(df.shape[0])
                 self._base.data = self._base.data.merge(df, how="left", on=[column])
 
+        self._base.data[list(column_mapping.values())] = self._base.data[list(column_mapping.values())].astype("category")
+
         if not keep_original:
             self._base.data.drop(columns=column_mapping.keys(), inplace=True)
 

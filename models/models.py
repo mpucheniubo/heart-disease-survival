@@ -323,7 +323,7 @@ class XGBSEKaplanTreeModel(XGBSEModel):
         self, features: Features, params: dict[str, Any] | None = None
     ) -> None:
         super().__init__(features)
-        self._model: XGBSEKaplanTree = XGBSEKaplanTree(params)
+        self._model: XGBSEKaplanTree = XGBSEKaplanTree(params, enable_categorical=True)
 
     @classmethod
     def load(cls, path: Path, name: str, features: Features) -> XGBSEKaplanTreeModel:
@@ -339,7 +339,7 @@ class XGBSEKaplanNeighborsModel(XGBSEModel):
         self, features: Features, params: dict[str, Any] | None = None
     ) -> None:
         super().__init__(features)
-        self._model: XGBSEKaplanNeighbors = XGBSEKaplanNeighbors(params)
+        self._model: XGBSEKaplanNeighbors = XGBSEKaplanNeighbors(params, enable_categorical=True)
 
     @classmethod
     def load(
